@@ -1,48 +1,52 @@
 const UserModel= require('../Models/userModel');
-const jwt =require('jsonwebtoken')
+const jwt =require('jsonwebtoken');
+const CatchAsync = require('../utils/CatchAsync');
+const MobileAccount = require('../Models/mobileAccountModel');
 
-exports.logIn = async(req,res,next)=>{
+exports.LogInMobile =CatchAsync(async(req,res,next)=>{
+    const MobileNumber = req.body.Phone;
+    if(!MobileNumber){
+      return res.status(500).json({message:'No Mobile Number Received. Failed To LogIn'});
+    }
+    const mobileAc = await MobileAccount.findOne({mobileNumber:MobileNumber});
+    if(!mobileAc){
+      return res.status(404).json({message:'No WhatsApp Account found. Failed To LogIn'});
+    }
+    if(!mobileAc.AccountId){
+      return res.status(400).json({message:'WhatsApp Account Not Linked to YMF Membership'});
+    }
+    const UserAccount = await UserModel.findOne({_id:mobileAc.AccountId});
+    if(!UserAccount){
+      return res.status(404).json({message:'No YMF Account found. Failed To LogIn'});
+    }
+    res.status(200).json({message:'successfuly found account info',User:UserAccount});
+});
+exports.logIn = CatchAsync(async(req,res,next)=>{
 
-  const {YMFID,email,phoneNumber,password} = req.body;
-  let User;
-  if(YMFID&&password||email&&password||phoneNumber&&password){
-    if(phoneNumber){
-        User = await UserModel.findOne({phoneNumber}).select('+password');
-      }
-    if(email){
-        User = await UserModel.findOne({email}).select('+password');
-      }
-    if(YMFID){
-        User = await UserModel.findOne({YMFID}).select('+password');
-      }
+  const {ymfid,password} = req.body;
+  console.log(req.body)
+  let User = undefined;
+  if(ymfid&&password){
+    User = await UserModel.find({$or:[{'YMFID':ymfid},{'email':ymfid}]}).select('+password');
+    console.log(User)
     if(User){
-        if(User.Registered){
-          if(await User.correctPassword(password,User.password)){
-            const token = await this.GetToken(User._id,User.YMFID);
-            User.password = undefined;
-            res.status(200).json({message:'Log In Successfull',User,token});
-           }else{
-            return res.status(404).json({message:'login details not correct.LogIn Failed!'});
-          }
-        }else{
-          return res.status(404).json({message:'Not registred Please Pay Required Reg Fees First!'});
-        }
-
-
+      if(await User[0].correctPassword(password,User[0].password)){
+        const token = await this.GetToken(User[0]._id,User[0].YMFID);
+        User[0].password = undefined;
+        res.status(200).json({message:'Log In Successfull',User:User[0],token});
+       
       }else{
-
         return res.status(404).json({message:'login details not correct.LogIn Failed!'});
       }
-
   }else{
     return res.status(404).json({message:'entered login details not valid'});
-  }
+  }}
 
 
-}
+});
 
 exports.GetToken = async(id,ymfID)=>{
   const token = await jwt.sign({id,ymfID},process.env.TOKKEN_KEY,{expiresIn:'168h'});
   return token;
-}
+};
 
