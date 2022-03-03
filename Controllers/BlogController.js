@@ -9,10 +9,16 @@ exports.GetBlogs = CatchAsync(async(req,res,next)=>{
     if(!Blogs){
         res.status(404).json({message:'no Blogs Available'});
     }
-    res.status(200).json({message:'successfully found blogs',Blogs});
+    res.status(200).json({message:'successfully found articles',Blogs});
 
 })
-
+exports.GetUnverifiedBlogs = CatchAsync(async(req,res,next)=>{
+  const Blogs = await unverifiedBlogModel.find().sort('-CreatedOn');
+    if(!Blogs){
+        res.status(404).json({message:'no Blogs Available'});
+    }
+    res.status(200).json({message:'successfully unverified articles',Blogs});
+})
 exports.GetBlog = CatchAsync(async(req,res,next)=>{
     const blogId = req.body.body.blogid;
     console.log(blogId);
@@ -35,7 +41,7 @@ exports.VerifyBlog = CatchAsync(async(req,res,next)=>{
     if(!createdBlog){
         res.status(500).json({message:'error creating blog'});
     }
-    res.status(200).json({message:'successfuly verified blog',Blog:createdBlog});
+    res.status(200).json({message:'successfuly verified blog'});
 });
 exports.UploadDocument = CatchAsync(async(req,res,next)=>{
   let file = req['files'].upload;

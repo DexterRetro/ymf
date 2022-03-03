@@ -43,6 +43,7 @@ router.route('/calendar').get(calender.GetCalender);
 router.route('/blog').get(blog.GetBlogs).post(blog.CreateBlog).delete(blog.DeleteBlog);
 router.route('/blog/word').post(blog.UploadDocument);
 router.route('/blog/update').post(blog.UpdateBlog)
+router.route('/blog/unverified').get(blog.GetUnverifiedBlogs).post(blog.VerifyBlog);
 
 
 
