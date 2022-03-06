@@ -24,24 +24,23 @@ exports.LogInMobile =CatchAsync(async(req,res,next)=>{
 exports.logIn = CatchAsync(async(req,res,next)=>{
 
   const {ymfid,password} = req.body;
-  console.log(req.body)
   let User = undefined;
   if(ymfid&&password){
     User = await UserModel.find({$or:[{'YMFID':ymfid},{'email':ymfid}]}).select('+password');
     console.log(User)
     if(User){
-      if(await User[0].correctPassword(password,User[0].password)){
+
+      if(User.length>0&&await User[0].correctPassword(password,User[0].password)){
         const token = await this.GetToken(User[0]._id,User[0].YMFID);
         User[0].password = undefined;
-        res.status(200).json({message:'Log In Successfull',User:User[0],token});
+        res.status(200).json({message:'Log In Successful',User:User[0],token});
        
       }else{
-        return res.status(404).json({message:'login details not correct.LogIn Failed!'});
+        return res.status(404).json({message:'login details not correct. login Failed!'});
       }
   }else{
     return res.status(404).json({message:'entered login details not valid'});
   }}
-
 
 });
 
