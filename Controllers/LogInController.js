@@ -21,13 +21,15 @@ exports.LogInMobile =CatchAsync(async(req,res,next)=>{
     }
     res.status(200).json({message:'successfuly found account info',User:UserAccount});
 });
+
+
+
 exports.logIn = CatchAsync(async(req,res,next)=>{
 
   const {ymfid,password} = req.body;
   let User = undefined;
   if(ymfid&&password){
     User = await UserModel.find({$or:[{'YMFID':ymfid},{'email':ymfid}]}).select('+password');
-    console.log(User)
     if(User){
 
       if(User.length>0&&await User[0].correctPassword(password,User[0].password)){

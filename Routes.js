@@ -35,6 +35,7 @@ router.route('/oldusers').get(users.GetTransitioningUsers).post(users.RegisterTr
 router.route('/payupdate/:id').post(pay.RegPaymentResult);
 router.route('/pollpayement').post(pay.CheckSuccess);
 router.route('/pay').get(pay.GetPaymentAmount).post(pay.PaySubscription);
+router.route('/paymentConfirm').post(pay.AddPaymentProof);
 
 //calendar api
 router.route('/calendar').get(calender.GetCalender);

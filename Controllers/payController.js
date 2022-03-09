@@ -4,10 +4,13 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' });
 const user = require('./userController')
 const price = require('../Models/PriceModel')
-const finance = require('../Models/financialModel')
+const finance = require('../Models/financialModel');
+const CatchAsync = require("../utils/CatchAsync");
 const PayNowKey = process.env.PAYNOW_KEY;
 const PayNowID = process.env.PAYNOW_ID;
 let paynow = new Paynow(PayNowID,PayNowKey);
+const paymentPfoof = require('../Models/PaymentProof');
+const paymentProof = require("../Models/PaymentProof");
 
 exports.Pay =  async(Cart,userName,userPhoneNumber)=>{
 
@@ -47,7 +50,7 @@ const response = await paynow.sendMobile(payment,userphoneNumber,getPhoneNetwork
 return {response,Invoice};
 }
 
-exports.CheckSuccess = async(req,res,next)=>{
+exports.CheckSuccess = CatchAsync(async(req,res,next)=>{
   const User = req.body.user;
   if(!User){
     return res.status(404).json({message:'no poll Url found/ invalid poll url',PollResult:{success:false},token:undefined});
@@ -59,9 +62,9 @@ exports.CheckSuccess = async(req,res,next)=>{
   }
   res.status(200).json({message:'Poll Results',PollResult:result,token:RegResults.token,user:RegResults.newUser});
 
-}
+})
 
-exports.RegPaymentResult = async(req,res,next)=>{
+exports.RegPaymentResult = CatchAsync(async(req,res,next)=>{
   const details = req.params.id;
 
   const userPhoneNumber = details.split('_')[3];
@@ -69,21 +72,35 @@ exports.RegPaymentResult = async(req,res,next)=>{
   //await user.RegisterUser();
 
   res.status(200).json({message:'received payment Update'});
-}
+})
 
 exports.PollResults = async(PaymentPollURL)=>{
   return await paynow.pollTransaction(PaymentPollURL);
 }
 
-exports.GetPaymentAmount = async(req,res,next)=>{
+exports.GetPaymentAmount = CatchAsync(async(req,res,next)=>{
     const price = await price.findOne({ItemType:req.body.ItemType});
     if(!price){
       res.status(404).json({message:'cannot find price',price:undefined});
     }
     res.status(200).json({message:'price found',price});
-}
+})
 
-exports.PaySubscription = async(req,res,next)=>{
+exports.AddPaymentProof = CatchAsync(async(req,res,next)=>{
+    const {payment,refCode,amount,purpose} = req.body;
+    if(!payment||!refCode||!amount||!purpose){
+      return res.status(400).json({message:'in valid Payment Details'});
+    }
+
+    const Record = await paymentProof.create({PaymentPlatform:payment,Amount:amount,Purpose:purpose,RefCode:refCode,});
+   if(!Record){
+    return res.status(500).json({message:'failed to create record'});
+   }
+res.status(200).json({message:'success. created Record'});
+
+})
+
+exports.PaySubscription = CatchAsync(async(req,res,next)=>{
   const membershipType = req.body.membershipType;
   if(!membershipType){
     res.status(400).json({message:'invalid membershipType'});
@@ -97,7 +114,7 @@ exports.PaySubscription = async(req,res,next)=>{
     res.status(500).json({message:'error in creating payment'});
   }
   res.status(200).json({message:`Successfully created payment`,PaymentUrl:receipt.redirectUrl});
-}
+})
 
 function getPhoneNetwork (number){
   const first3 = number.substring(0,3);

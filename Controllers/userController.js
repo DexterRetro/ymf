@@ -96,20 +96,19 @@ exports.GetAllUsers= catchAsync(async(req,res,next)=>{
 
 exports.GetUser=catchAsync(async(req,res,next)=>{
   if(!req.user){
-    return res.status(404).json({message:'token auth failed 101'});
+    return res.status(404).json({message:'token auth failed'});
   }
-  console.log(req.user);
   const id = req.user.id.toString();
   const ymfID = req.user.ymfID;
   if(!id||!ymfID){
-    res.status(404).json({message:'token auth failed 102'});
+    return res.status(404).json({message:'token auth failed'});
   }
-  const user = await UserModel.findById({_id:id});
+  const user = await UserModel.findOne({_id:id});
   if(!user){
-    res.status(404).json({message:'user not found'});
+   return  res.status(404).json({message:'user not found'});
   }
   if(!user.YMFID===ymfID){
-   res.status(404).json({message:'user ID does not match'});
+   return res.status(404).json({message:'user ID does not match'});
   }
   res.status(200).json({message:'successfully authenticated',user});
 });
