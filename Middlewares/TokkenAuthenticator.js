@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
+const CatchAsync = require('../utils/CatchAsync');
 
 
-const verifyToken = async(req, res, next) => {
+const verifyToken = CatchAsync(async(req, res, next) => {
     let token =''
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
       token= req.headers.authorization.split(' ')[1];
@@ -10,16 +11,11 @@ const verifyToken = async(req, res, next) => {
     }
 
     if (!token) {
-      return res.status(403).json({message:"A token is required for authentication"});
+      return res.status(403).json({message:"LogIn Token Invalid. Please Log In"});
     }
-    try {
-      const decoded = await jwt.verify(token, process.env.TOKKEN_KEY);
-      req.user = decoded;
-      return next();
-    } catch (err) {
-      return res.status(401).json({message:"A token is required for authentication"});
-    }
-   
-  };
+    const decoded = await jwt.verify(token, process.env.TOKKEN_KEY);
+    req.user = decoded;
+    return next();
+  });
 
 module.exports = verifyToken;
