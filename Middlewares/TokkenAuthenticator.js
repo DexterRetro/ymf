@@ -13,9 +13,14 @@ const verifyToken = CatchAsync(async(req, res, next) => {
     if (!token) {
       return res.status(403).json({message:"LogIn Token Invalid. Please Log In"});
     }
-    const decoded = await jwt.verify(token, process.env.TOKKEN_KEY);
-    req.user = decoded;
-    return next();
+    try{
+      const decoded = await jwt.verify(token, process.env.TOKKEN_KEY);
+      req.user = decoded;
+      return next();
+    }catch(err){
+      return res.status(403).json({message:"LogIn Token Invalid. Please Log In"}); 
+    }
+    
   });
 
 module.exports = verifyToken;
