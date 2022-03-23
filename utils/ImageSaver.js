@@ -1,14 +1,11 @@
 const jimp = require('jimp');
 const mime = require('mime-types');
+const DB = require('../Controllers/FileCloudController')
 
-exports.SaveImage = async(imageURL,fileName,filePath)=>{
+exports.SaveImage = async(imageURL,fileName,fileType)=>{
     const buffer = Buffer.from(imageURL,"base64");
-    const res = await jimp.read(buffer).catch(err=>{
-        if(err){
-            return 'error';
-        }
-    })
-    return res.write(`${filePath}/${fileName}`);
+   // 
+    return await DB.UploadFile(buffer,fileType,fileName);
 }
 
 exports.GetImageSavename = (filename,mimeInfo)=>{

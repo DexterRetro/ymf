@@ -2,7 +2,7 @@ mongoose = require('mongoose');
 
 const scheme = new mongoose.Schema({
   ItemName:{type:String,required:true},
-  ItemType:{type:String,enum: ['student-membership', 'general-membership','registrationfees'],default:'general-membership'},
+  ItemType:{type:String,enum: ['general-membership','registration-fees','corporate-membership'],default:'general-membership'},
   ItemPrice:{type:Number,required:true},
 })
 

@@ -9,42 +9,61 @@ const CatchAsync = require("../utils/CatchAsync");
 const PayNowKey = process.env.PAYNOW_KEY;
 const PayNowID = process.env.PAYNOW_ID;
 let paynow = new Paynow(PayNowID,PayNowKey);
-const paymentPfoof = require('../Models/PaymentProof');
-const paymentProof = require("../Models/PaymentProof");
+const paymentProof = require('../Models/PaymentProof');
+const transactionModel = require('../Models/TransactionsModel')
 
-exports.Pay =  async(Cart,userName,userPhoneNumber)=>{
+exports.Pay =  async(Cart,userName,userPhoneNumber,purpose)=>{
 
 // Create instance of Paynow class
 const Items = Cart;
-const Invoice = `YMFPay_${userName}_${Date.now()}`;
+const Invoice = `YMFPay_${new Date(Date.now()).toISOString()}`;
 const conRate = await finance.find();
-paynow.resultUrl = `http://7f10-197-221-255-110.ngrok.io/api/regpaypoll/${Invoice}_${userPhoneNumber}`;
+paynow.resultUrl = `${process.env.DEVURL}/api/payupdate/${Invoice}`;
 // Create a new payment
 let payment = paynow.createPayment(Invoice);
-
+let TotalPayed =0;
 // Add items to the payment list passing in the name of the item and it's price
 Items.forEach(element => {
   payment.add(element.ItemName, element.ItemPrice*conRate[0].conversionRate);
+  TotalPayed+=element.ItemPrice*conRate[0].conversionRate;
 });
+await transactionModel.create({
+  customer:userName,
+  amount:TotalPayed,
+  refcode:Invoice,
+  contacts:userPhoneNumber,
+  paymentPlatform:'paynow',
+  status:'pending',
+  purpose:purpose});
 // Send off the payment to Paynow
 const response = await paynow.send(payment);
 return {response,Invoice};
 
 }
 
-exports.PayMobile = async(Cart,userName,userPhoneNumber,userEmail)=>{
+exports.PayMobile = async(Cart,userName,userPhoneNumber,userEmail,purpose)=>{
   // Create instance of Paynow class
 const Items = Cart;
-const Invoice = `YMFPay_${userName}_${getPhoneNetwork(userPhoneNumber)}_${Date.now()}`;
+const Invoice = `YMFPay_${new Date(Date.now()).toISOString()}`;
 const conRate = await finance.find();
-paynow.resultUrl = `http://7f10-197-221-255-110.ngrok.io/api/regpaypoll/${Invoice}_${userPhoneNumber}`;
+paynow.resultUrl = `${process.env.DEVURL}/api/payupdate/${Invoice}`;
 // Create a new payment
 let payment = paynow.createPayment(Invoice,userEmail);
 
+let TotalPayed=0;
 // Add items to the payment list passing in the name of the item and it's price
 Items.forEach(element => {
   payment.add(element.name, element.price*conRate[0].conversionRate);
+  TotalPayed+=element.price*conRate[0].conversionRate;
 });
+await transactionModel.create({
+  customer:userName,
+  amount:TotalPayed,
+  refcode:Invoice,
+  contacts:`Phone: ${userPhoneNumber} Email: ${userEmail}`,
+  paymentPlatform:'paynow',
+  status:'pending',
+  purpose:purpose});
 // Send off the payment to Paynow
 const response = await paynow.sendMobile(payment,userphoneNumber,getPhoneNetwork(userPhoneNumber));
 return {response,Invoice};
@@ -66,11 +85,8 @@ exports.CheckSuccess = CatchAsync(async(req,res,next)=>{
 
 exports.RegPaymentResult = CatchAsync(async(req,res,next)=>{
   const details = req.params.id;
-
-  const userPhoneNumber = details.split('_')[3];
-
-  //await user.RegisterUser();
-
+  await user.RegisterUser();
+  console.log('poled payment')
   res.status(200).json({message:'received payment Update'});
 })
 
@@ -101,7 +117,8 @@ res.status(200).json({message:'success. created Record'});
 })
 
 exports.PaySubscription = CatchAsync(async(req,res,next)=>{
-  const membershipType = req.body.membershipType;
+  const membershipType = req.membershipType;
+  const user = req.User;
   if(!membershipType){
     res.status(400).json({message:'invalid membershipType'});
   }
@@ -109,7 +126,7 @@ exports.PaySubscription = CatchAsync(async(req,res,next)=>{
   if(!paymentItem){
     res.status(404).json({message:'payment details not available'});
   }
-  const receipt = await this.Pay({name:paymentItem.ItemName,price:paymentItem.ItemPrice});
+  const receipt = await this.Pay({name:paymentItem.ItemName,price:paymentItem.ItemPrice},`${user.userName} ${user.userSurname}`,user.phoneNumber,'Subscription Payment');
   if(!receipt){
     res.status(500).json({message:'error in creating payment'});
   }

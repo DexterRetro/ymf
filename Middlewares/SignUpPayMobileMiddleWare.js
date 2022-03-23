@@ -5,7 +5,7 @@ const CatchAsync = require('../utils/CatchAsync');
 //creates payment and forwards to account creation
 const SignUp = CatchAsync(async(req,res,next)=>{
   const price = await priceModel.findOne({ItemType:'registrationfees'});
-  const response = await pay.PayMobile([{name:price.ItemName,price:price.ItemPrice}],req.body.userName,req.body.phoneNumber,req.body.userEmail);
+  const response = await pay.PayMobile([{name:price.ItemName,price:price.ItemPrice}],`${req.body.userName} ${req.body.userSurname}`,req.body.phoneNumber,req.body.userEmail,'New Member Registration');
   if(response.success){
     req.PaymentResponse = response;
     next();

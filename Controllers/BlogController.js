@@ -21,7 +21,6 @@ exports.GetUnverifiedBlogs = CatchAsync(async(req,res,next)=>{
 })
 exports.GetBlog = CatchAsync(async(req,res,next)=>{
     const blogId = req.body.body.blogid;
-    console.log(blogId);
     if(!blogId){
         res.status(404).json({message:'no Blog Id received'});
     }
@@ -87,14 +86,14 @@ exports.CreateBlog = CatchAsync(async(req,res,next)=>{
     const CoverImageInfo = blog.blogPicture.split(';base64,');
     const CoverImageUrl =CoverImageInfo[1];
     const CoverImageName =await ImageSaver.GetImageSavename(`Cover_${CreatedBlog._id}`,CoverImageInfo[0].split(':')[1]);
-    await ImageSaver.SaveImage(CoverImageUrl,CoverImageName,'./pictures');
-    CreatedBlog.blogPicture=CoverImageName;
+    const uploadCoverRes = await ImageSaver.SaveImage(CoverImageUrl,CoverImageName,'./blogPics');
+    CreatedBlog.blogPicture=uploadCoverRes;
     blog.Content.forEach(async(element,i) => {
       if(element.PImage.ImbededImg){
         const ImageUrl =  element.PImage.ImbededImg.split(';base64,')[1];
         const ImageName = await ImageSaver.GetImageSavename(`blogPic_${CreatedBlog._id}_${i}`,element.PImage.ImbededImg.split(';base64,')[0]);
-        await ImageSaver.SaveImage(ImageUrl,ImageName,'./pictures')
-        CreatedBlog.Content[i].PImage.ImbededImg = ImageName;
+        const uploadImagesRes = await ImageSaver.SaveImage(ImageUrl,ImageName,'./blogPics')
+        CreatedBlog.Content[i].PImage.ImbededImg = uploadImagesRes;
       }
     });
      const UpdatedBlog = await CreatedBlog.save();

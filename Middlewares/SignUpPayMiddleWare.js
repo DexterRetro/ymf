@@ -16,7 +16,7 @@ const SignUp = CatchAsync(async(req,res,next)=>{
         break;
     }
     const price = await priceModel.find({ItemType:cartType});
-    const response = await pay.Pay(price,req.body.userName,req.body.phoneNumber);
+    const response = await pay.Pay(price,`${req.body.userName} ${req.body.userSurname}`,req.body.phoneNumber,'New Member Registration');
     if(response.response.success){
       req.PaymentResponse = response;
       req.PaymentOption ='paynow';

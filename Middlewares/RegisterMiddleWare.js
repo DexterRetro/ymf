@@ -20,7 +20,7 @@ const Register= CatchAsync(async(req,res,next)=>{
     const ImageProps =ImageData[0].split(':')[1];
     const ImageName = ImageSaver.GetImageSavename( `IDPIC_${Date.now()}_${userID}`,ImageProps);
     const imageStatus = await ImageSaver.SaveImage(ImageData[1],ImageName,'./pictures/IDpics');
-    req.IDpicName = ImageName;
+    req.IDpicName = imageStatus[0];
    next();
 })
 

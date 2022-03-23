@@ -3,7 +3,6 @@ const app = require('./app');
 const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' });
 
-
 let constring = '';
 if(process.env.NODE_ENV==='development'){
   constring = process.env.LOCAL_DB;
@@ -23,6 +22,8 @@ mongoose.connect(constring, {
   }).then(
       app.listen(port,()=>{
     console.log(`Server started Succesfully. listening on port ${port}... `);
+   
+
 })).catch(err=>{
   console.log(err);
 })
