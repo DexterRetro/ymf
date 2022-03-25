@@ -84,8 +84,6 @@ exports.GetFile = CatchAsync(async(req,res,next)=>{
   let FilePath =''
   if(!req.query.id){
     FilePath= `/${req.query.folder}/${req.query.filename}`;
-    
-  console.log(FilePath);
   const dropbox = await getDropBoxInstance();
   const stream = dropbox({
     resource: 'files/download',
@@ -120,27 +118,42 @@ exports.GetFile = CatchAsync(async(req,res,next)=>{
 
 exports.UploadFile = async(fileBuffer,fileType,fileName)=>{
   const dropbox = await getDropBoxInstance();
-  const dropboxUploadStream = dropbox({
-    resource: 'files/upload',
-    parameters: {
-        path: `/${fileType}/${fileName}`
-    }
+  return new Promise((resolve,reject)=>{
+    fs.writeFile(path.join('./temp/',fileName), fileBuffer, (err)=>{
+      if(err){
+        reject(err);
+      }
+      dropbox({
+        resource: 'files/upload',
+        parameters: {
+            path: `/${fileType}/${fileName}`
+        },
+        readStream:fs.createReadStream(path.join('./temp/',fileName))
+    }, (err, result, response) => {
+      if(err){
+        reject(err);
+      }
+        //upload completed
+        fs.unlink(path.join('./temp',fileName), (err)=>{
+          if(err){
+            reject(err);
+          }
+          resolve(`${fileType}/${fileName}`)
+        })
+       
+    });
+    })
 
-}, (err, result, response) => {
-    //upload completed
-});
-const stream = Readable.from(fileBuffer.toString());
-stream.pipe(dropboxUploadStream);
-return  `${fileType}/${fileName}`;
+  })
 }
 
 exports.AuthDP = CatchAsync(async(req,res,next)=>{
   var params = req.query;
   //after redirection, you should receive code
   const dropbox = dropboxV2Api.authenticate({
-    client_id: 'uq9f1dnwgjd673k',
-    client_secret: 'vhs9ypk9w9t8fhn',
-    redirect_uri: 'http://localhost:3000/auth',
+    client_id: process.env.DBX_APP_KEY,
+    client_secret: process.env.DBX_APP_SECRET,
+    redirect_uri: process.env.REDIRECT_URL,
     token_access_type: 'offline', // if you need an offline ling-living refresh token
     //state: 'OPTIONAL_STATE_VALUE'
   });

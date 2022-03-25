@@ -3,6 +3,8 @@ const blogModel = require('../Models/blogModel');
 const unverifiedBlogModel = require('../Models/articleModel')
 const ImageSaver = require('../utils/ImageSaver');
 const DocuReader = require('../utils/WordDocuExtrator')
+const path = require('path');
+const mime = require('mime')
 
 exports.GetBlogs = CatchAsync(async(req,res,next)=>{
     const Blogs = await blogModel.find().sort('-CreatedOn');
@@ -32,14 +34,22 @@ exports.GetBlog = CatchAsync(async(req,res,next)=>{
 })
 exports.VerifyBlog = CatchAsync(async(req,res,next)=>{
   const id = req.body.id;
-  const Blog = await unverifiedBlogModel.findOne({_id:id});
+  console.log(id)
+  const Blog = await unverifiedBlogModel.findById(id);
   if(!Blog){
     res.status(404).json({message:'no Blog received'});
   }
-  const createdBlog = await blogModel.create({Author:Blog.Author,Topic:Blog.Topic,Summary:Blog.Summary,Content:Blog.Content});
+  const createdBlog = await blogModel.create(
+    {Author:Blog.Author,
+      Topic:Blog.Topic,
+      Summary:Blog.Summary,
+      Content:Blog.Content,
+      blogPicture:Blog.blogPicture
+    });
     if(!createdBlog){
         res.status(500).json({message:'error creating blog'});
     }
+  await unverifiedBlogModel.deleteOne({_id:id});
     res.status(200).json({message:'successfuly verified blog'});
 });
 exports.UploadDocument = CatchAsync(async(req,res,next)=>{
@@ -86,14 +96,16 @@ exports.CreateBlog = CatchAsync(async(req,res,next)=>{
     const CoverImageInfo = blog.blogPicture.split(';base64,');
     const CoverImageUrl =CoverImageInfo[1];
     const CoverImageName =await ImageSaver.GetImageSavename(`Cover_${CreatedBlog._id}`,CoverImageInfo[0].split(':')[1]);
-    const uploadCoverRes = await ImageSaver.SaveImage(CoverImageUrl,CoverImageName,'./blogPics');
+    const uploadCoverRes = await ImageSaver.SaveImage(CoverImageUrl,CoverImageName,mime.lookup(path.extname(CoverImageName)).split('/')[0]);
     CreatedBlog.blogPicture=uploadCoverRes;
     blog.Content.forEach(async(element,i) => {
-      if(element.PImage.ImbededImg){
-        const ImageUrl =  element.PImage.ImbededImg.split(';base64,')[1];
-        const ImageName = await ImageSaver.GetImageSavename(`blogPic_${CreatedBlog._id}_${i}`,element.PImage.ImbededImg.split(';base64,')[0]);
-        const uploadImagesRes = await ImageSaver.SaveImage(ImageUrl,ImageName,'./blogPics')
-        CreatedBlog.Content[i].PImage.ImbededImg = uploadImagesRes;
+      if(element.PImage){
+        if(element.PImage.ImbededImg){
+          const ImageUrl =  element.PImage.ImbededImg.split(';base64,')[1];
+          const ImageName = await ImageSaver.GetImageSavename(`blogPic_${CreatedBlog._id}_${i}`,element.PImage.ImbededImg.split(';base64,')[0]);
+          const uploadImagesRes = await ImageSaver.SaveImage(ImageUrl,ImageName,mime.lookup(path.extname(ImageName)).split('/')[0])
+          CreatedBlog.Content[i].PImage.ImbededImg = uploadImagesRes;
+        }
       }
     });
      const UpdatedBlog = await CreatedBlog.save();
@@ -101,7 +113,7 @@ exports.CreateBlog = CatchAsync(async(req,res,next)=>{
       await blogModel.findOneAndDelete({_id:CreatedBlog._id});
       return  res.status(500).json({message:'failed To create Blog'});
     }
-    res.status(200).json({message:'successfuly created blogs',Blog:UpdatedBlog});
+    res.status(200).json({message:'successfuly Uploaded Article',Blog:UpdatedBlog});
 })
 
 exports.UpdateBlog = CatchAsync(async(req,res,next)=>{
