@@ -75,7 +75,7 @@ exports.CreateUser = catchAsync(async(req,res,next)=>{
     }else{
       res.status(200).json({message:`Successfully Added ${User.userName}`, PaymentUrl:'pendingAproval'});
     }
-   
+
 });
 
 exports.SetUpUnverifiedWhatsAppAccount = catchAsync(async(req,res,next)=>{
@@ -195,10 +195,10 @@ exports.RegisterNewUser=catchAsync(async(req,res,next)=>{
   let userNumber ='';
   if(count>100){
     userNumber = `${count+1}`
-   
+
   }else if(count>9){
     userNumber=`0${count+1}`
-    
+
   }else{
     userNumber =`00${count+1}`
   }
@@ -257,10 +257,10 @@ exports.RegisterUser=async (Invoice,result)=>{
       let userNumber ='';
       if(count>100){
         userNumber = `${count+1}`
-       
+
       }else if(count>9){
         userNumber=`0${count+1}`
-        
+
       }else{
         userNumber =`00${count+1}`
       }
@@ -313,6 +313,6 @@ function GetProperProvName(province){
     case 'HARARE':
       return 'Harare Province';
 
-    
+
   }
 }

@@ -3,7 +3,7 @@ const { Paynow } = require("paynow");
 const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' });
 const user = require('./userController')
-const price = require('../Models/PriceModel')
+const price = require('../Models/ItemModel')
 const finance = require('../Models/financialModel');
 const CatchAsync = require("../utils/CatchAsync");
 const PayNowKey = process.env.PAYNOW_KEY;
@@ -22,6 +22,7 @@ paynow.resultUrl = `${process.env.DEVURL}/api/payupdate/${Invoice}`;
 // Create a new payment
 let payment = paynow.createPayment(Invoice);
 let TotalPayed =0;
+console.log(Items)
 // Add items to the payment list passing in the name of the item and it's price
 Items.forEach(element => {
   payment.add(element.ItemName, element.ItemPrice*conRate[0].conversionRate);
@@ -30,6 +31,7 @@ Items.forEach(element => {
 await transactionModel.create({
   customer:userName,
   amount:TotalPayed,
+  currency:'ZWL',
   refcode:Invoice,
   contacts:userPhoneNumber,
   paymentPlatform:'paynow',
@@ -59,6 +61,7 @@ Items.forEach(element => {
 await transactionModel.create({
   customer:userName,
   amount:TotalPayed,
+  currency:'ZWL',
   refcode:Invoice,
   contacts:`Phone: ${userPhoneNumber} Email: ${userEmail}`,
   paymentPlatform:'paynow',

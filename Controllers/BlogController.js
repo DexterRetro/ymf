@@ -1,10 +1,14 @@
 const CatchAsync = require('../utils/CatchAsync');
 const blogModel = require('../Models/blogModel');
-const unverifiedBlogModel = require('../Models/articleModel')
 const ImageSaver = require('../utils/ImageSaver');
 const DocuReader = require('../utils/WordDocuExtrator')
 const path = require('path');
 const mime = require('mime')
+const magModel = require('../Models/magazineModel')
+const CloudFile = require('./FileCloudController')
+const fsPromises = require('fs/promises')
+const fs = require('fs')
+
 
 exports.GetBlogs = CatchAsync(async(req,res,next)=>{
     const Blogs = await blogModel.find().sort('-CreatedOn');
@@ -13,13 +17,6 @@ exports.GetBlogs = CatchAsync(async(req,res,next)=>{
     }
     res.status(200).json({message:'successfully found articles',Blogs});
 
-})
-exports.GetUnverifiedBlogs = CatchAsync(async(req,res,next)=>{
-  const Blogs = await unverifiedBlogModel.find().sort('-CreatedOn');
-    if(!Blogs){
-        res.status(404).json({message:'no Blogs Available'});
-    }
-    res.status(200).json({message:'successfully unverified articles',Blogs});
 })
 exports.GetBlog = CatchAsync(async(req,res,next)=>{
     const blogId = req.body.body.blogid;
@@ -35,25 +32,17 @@ exports.GetBlog = CatchAsync(async(req,res,next)=>{
 exports.VerifyBlog = CatchAsync(async(req,res,next)=>{
   const id = req.body.id;
   console.log(id)
-  const Blog = await unverifiedBlogModel.findById(id);
+  const Blog = await blogModel.findById(id);
   if(!Blog){
     res.status(404).json({message:'no Blog received'});
   }
-  const createdBlog = await blogModel.create(
-    {Author:Blog.Author,
-      Topic:Blog.Topic,
-      Summary:Blog.Summary,
-      Content:Blog.Content,
-      blogPicture:Blog.blogPicture
-    });
-    if(!createdBlog){
-        res.status(500).json({message:'error creating blog'});
-    }
-  await unverifiedBlogModel.deleteOne({_id:id});
+  Blog.Status ='verified';
+  await Blog.save();
     res.status(200).json({message:'successfuly verified blog'});
 });
 exports.UploadDocument = CatchAsync(async(req,res,next)=>{
   let file = req['files'].upload;
+  console.log(file)
   if(!file){
     return res.status(400).json({message:'no document Received'});
   }
@@ -83,7 +72,7 @@ exports.CreateBlog = CatchAsync(async(req,res,next)=>{
     blog.Content.forEach(element => {
       paragraphs.push({paragraph:element.paragraph,PImage:{ImbededImg:'',caption:element.caption}});
     });
-    const CreatedBlog = await unverifiedBlogModel.create({
+    const CreatedBlog = await blogModel.create({
     Author:blog.Author,
     Topic:blog.Topic,
     Summary:blog.Summary,
@@ -135,14 +124,14 @@ exports.UpdateBlog = CatchAsync(async(req,res,next)=>{
         Blog.Topic = req.body.blog.Topic;
       }
       if(req.body.blog.Summary){
-  
+
         Blog.Summary = req.body.blog.Summary;
       }
       if(req.body.blog.Content){
         Blog.Content = req.body.blog.Content;
       }
     }
-     
+
    await Blog.save().then(up=>{
     const updatedBlog = up;
     res.status(200).json({message:'successfuly updated blogs',Blog:updatedBlog});
@@ -151,6 +140,49 @@ exports.UpdateBlog = CatchAsync(async(req,res,next)=>{
 })
 
 exports.DeleteBlog = CatchAsync(async(req,res,next)=>{
+  const id = req.body.id;
+  if(!id){
+    return res.status(400).json({message:'id not valid'});
+  }
+    await blogModel.findByIdAndRemove(id);
     res.status(200).json({message:'successfuly deleted blogs'});
-    
+
+})
+
+
+exports.UploadMagazine = CatchAsync(async(req,res,next)=>{
+  let file = req['files'].upload;
+  if(!file){
+    return res.status(400).json({message:'no document Received'});
+  }
+
+  const response = await CloudFile.UploadFile(file.data,'PDF',file.name);
+  await magModel.create({URL:response,MagName:path.basename(file.name)});
+  res.status(200).json({message:'success'});
+
+})
+
+exports.GetMagazineList = CatchAsync(async(req,res,next)=>{
+  const magazines = await magModel.find();
+  if(!magazines){
+    return res.status(404).json({message:'Magazine List not found'});
+  }
+  res.status(200).json({message:'success:Fetched Magazines',magazines:magazines});
+
+})
+
+exports.DeleteMagazine = CatchAsync(async(req,res,next)=>{
+  console.log(req.params)
+  const id = req.params.id;
+  if(!id){
+    return res.status(400).json({message:'no id received'});
+  }
+  const mag = await magModel.findOne({_id:id});
+  if(!mag){
+    return res.status(404).json({message:'Magazine Record not found'});
+  }
+ // await CloudFile.DeleteFile(mag.URL);
+  await magModel.findOneAndDelete({_id:id})
+  res.status(200).json({message:'success:Removed Magazine'})
+
 })

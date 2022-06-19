@@ -71,10 +71,10 @@ async function RefreshToken(){
         await currentCredentials.save();
         resolve(result);
     })
-      
+
     }
   })
-  
+
 }
 
 exports.GetFile = CatchAsync(async(req,res,next)=>{
@@ -88,7 +88,7 @@ exports.GetFile = CatchAsync(async(req,res,next)=>{
   const stream = dropbox({
     resource: 'files/download',
     parameters: {path: FilePath}
-    }, 
+    },
     (err, result, response) => {
     //download completed
     });
@@ -100,13 +100,13 @@ exports.GetFile = CatchAsync(async(req,res,next)=>{
       return res.status(400).json({message:'File Query Not Valid'});
      }
      FilePath= `/${imageFile.PictureUrl}`;
-     
+
   console.log(FilePath);
   const dropbox = await getDropBoxInstance();
   const stream = dropbox({
     resource: 'files/download',
     parameters: {path: FilePath}
-    }, 
+    },
     (err, result, response) => {
     //download completed
     });
@@ -140,13 +140,31 @@ exports.UploadFile = async(fileBuffer,fileType,fileName)=>{
           }
           resolve(`${fileType}/${fileName}`)
         })
-       
+
     });
     })
 
   })
 }
 
+exports.DeleteFile = async(path)=>{
+  const dropbox = await getDropBoxInstance();
+  return new Promise((resolve,reject)=>{
+    dropbox({
+      resource: 'files/delete',
+      parameters: {
+          'path': path
+      }
+  }, (err, result, response) => {
+    if(err){
+      console.log(err);
+      reject(err);
+    }
+      resolve({result,response});
+    });
+  })
+
+}
 exports.AuthDP = CatchAsync(async(req,res,next)=>{
   var params = req.query;
   //after redirection, you should receive code

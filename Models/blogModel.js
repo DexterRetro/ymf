@@ -6,6 +6,7 @@ const scheme = mongoose.Schema({
     Summary:{type:String,require:true},
     Content:[{paragraph:String,PImage:{ImbededImg:String,caption:String}}],
     Comments:[{commentor:String,Comment:String,commentedOn:{type:Date,default:Date.now()}}],
+    Status:{type:String,enum:['verified','awaiting verification'],default:'awaiting verification',required:true},
     blogPicture:String
 })
 const blog = mongoose.model('blog',scheme,'blogs');

@@ -36,7 +36,7 @@ exports.logIn = CatchAsync(async(req,res,next)=>{
         const token = await this.GetToken(User[0]._id,User[0].YMFID);
         User[0].password = undefined;
         res.status(200).json({message:'Log In Successful',User:User[0],token});
-       
+
       }else{
         return res.status(404).json({message:'login details not correct. login Failed!'});
       }
